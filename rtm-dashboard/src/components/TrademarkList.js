@@ -1,0 +1,93 @@
+import React, { useEffect, useState } from 'react';
+
+const TrademarkList = () => {
+  const [trademarks, setTrademarks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchTrademarks();
+  }, []);
+
+  const fetchTrademarks = async () => {
+    try {
+      const token = localStorage.getItem('rtm_token');
+      const response = await fetch('http://localhost:5000/api/trademarks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch trademarks');
+      const data = await response.json();
+      setTrademarks(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Registered': return '#4caf50';
+      case 'Pending': return '#ff9800';
+      case 'Expired': return '#f44336';
+      case 'Opposed': return '#e91e63';
+      default: return '#8892b0';
+    }
+  };
+
+  if (loading) return <div style={{ color: '#8892b0' }}>Loading trademarks...</div>;
+  if (error) return <div style={{ color: '#ff4b4b' }}>{error}</div>;
+
+  return (
+    <div className="trademark-list">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ color: '#c5a059', margin: 0 }}>Active Trademarks</h2>
+        <button style={{ padding: '10px 20px', background: '#c5a059', border: 'none', borderRadius: '8px', color: '#0a192f', fontWeight: '600', cursor: 'pointer' }}>
+          + Add New
+        </button>
+      </div>
+
+      <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#e6f1ff', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <th style={{ padding: '16px' }}>Trademark Name</th>
+              <th style={{ padding: '16px' }}>Client</th>
+              <th style={{ padding: '16px' }}>App #</th>
+              <th style={{ padding: '16px' }}>Class</th>
+              <th style={{ padding: '16px' }}>Status</th>
+              <th style={{ padding: '16px' }}>Expiry</th>
+            </tr>
+          </thead>
+          <tbody>
+            {trademarks.map((tm) => (
+              <tr key={tm.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} className="table-row">
+                <td style={{ padding: '16px', fontWeight: '600' }}>{tm.trademark_name}</td>
+                <td style={{ padding: '16px', color: '#8892b0' }}>{tm.client_name}</td>
+                <td style={{ padding: '16px', fontFamily: 'monospace' }}>{tm.application_number}</td>
+                <td style={{ padding: '16px' }}>{tm.class_number}</td>
+                <td style={{ padding: '16px' }}>
+                  <span style={{ 
+                    padding: '4px 12px', 
+                    borderRadius: '20px', 
+                    fontSize: '0.75rem', 
+                    background: `${getStatusColor(tm.status)}20`, 
+                    color: getStatusColor(tm.status),
+                    border: `1px solid ${getStatusColor(tm.status)}40`
+                  }}>
+                    {tm.status}
+                  </span>
+                </td>
+                <td style={{ padding: '16px', color: '#8892b0' }}>{new Date(tm.expiry_date).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default TrademarkList;
