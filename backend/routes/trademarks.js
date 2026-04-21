@@ -3,8 +3,37 @@ const router = express.Router();
 const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|gif|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only images are allowed (jpeg, jpg, png, gif, webp)'));
+    }
+});
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -84,6 +113,28 @@ router.delete('/:id', auth, async (req, res) => {
         res.json({ message: 'Trademark deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// POST upload trademark logo
+router.post('/:id/upload-logo', auth, upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Please upload a file' });
+        }
+
+        const logoUrl = `/uploads/${req.file.filename}`;
+        
+        // Update database
+        await db.execute('UPDATE trademarks SET logo_url = ? WHERE id = ?', [logoUrl, req.params.id]);
+
+        res.json({ 
+            message: 'Logo uploaded successfully',
+            logo_url: logoUrl 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error during upload' });
     }
 });
 

@@ -27,6 +27,37 @@ const TrademarkList = () => {
     }
   };
 
+  const handleFileUpload = async (e, trademarkId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File is too large. Max size is 5MB.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      const token = localStorage.getItem('rtm_token');
+      const response = await fetch(`http://localhost:5000/api/trademarks/${trademarkId}/upload-logo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+      
+      // Refresh trademarks list
+      fetchTrademarks();
+    } catch (err) {
+      alert('Error uploading logo: ' + err.message);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Registered': return '#4caf50';
@@ -53,6 +84,7 @@ const TrademarkList = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#e6f1ff', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <th style={{ padding: '16px' }}>Logo</th>
               <th style={{ padding: '16px' }}>Trademark Name</th>
               <th style={{ padding: '16px' }}>Client</th>
               <th style={{ padding: '16px' }}>App #</th>
@@ -64,6 +96,39 @@ const TrademarkList = () => {
           <tbody>
             {trademarks.map((tm) => (
               <tr key={tm.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} className="table-row">
+                <td style={{ padding: '16px' }}>
+                  <div style={{ position: 'relative', width: '40px', height: '40px' }}>
+                    {tm.logo_url ? (
+                      <div style={{ position: 'relative', group: 'true' }}>
+                        <img 
+                          src={`http://localhost:5000${tm.logo_url}`} 
+                          alt="Logo" 
+                          style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}
+                        />
+                        <label 
+                          style={{ 
+                            position: 'absolute', top: 0, left: 0, width: '40px', height: '40px', 
+                            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                            borderRadius: '4px', cursor: 'pointer', opacity: 0, transition: 'opacity 0.2s' 
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                        >
+                          <span style={{ fontSize: '10px', color: 'white' }}>Edit</span>
+                          <input type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFileUpload(e, tm.id)} />
+                        </label>
+                      </div>
+                    ) : (
+                      <label style={{ 
+                        width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        border: '1px dashed #8892b0', borderRadius: '4px', cursor: 'pointer', color: '#8892b0', fontSize: '12px'
+                      }}>
+                        +
+                        <input type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => handleFileUpload(e, tm.id)} />
+                      </label>
+                    )}
+                  </div>
+                </td>
                 <td style={{ padding: '16px', fontWeight: '600' }}>{tm.trademark_name}</td>
                 <td style={{ padding: '16px', color: '#8892b0' }}>{tm.client_name}</td>
                 <td style={{ padding: '16px', fontFamily: 'monospace' }}>{tm.application_number}</td>

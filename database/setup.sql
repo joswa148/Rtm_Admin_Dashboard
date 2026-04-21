@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS admins (
 -- For the sake of 'initial setup', I'll provide an SQL that inserts one record.
 -- Insert initial admin credentials
 INSERT INTO admins (username, password, email, full_name, role) 
-VALUES ('admin', '$2b$10$EPZ9S.l4Yv4S1v5V4V5V4OuFqB6Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y', 'admin@right-trademark.com', 'RTM Admin', 'superadmin')
+VALUES ('admin', '$2a$10$zmsAETWPksbolbgF75giCO3N7I7KblxAPCakCr2/TyzElT9m.q57S', 'admin@right-trademark.com', 'RTM Admin', 'superadmin')
 ON DUPLICATE KEY UPDATE username=username;
 
 -- Create the trademarks table
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS trademarks (
     status ENUM('Pending', 'Registered', 'Opposed', 'Expired', 'Renewing') DEFAULT 'Pending',
     class_number VARCHAR(50), -- International Class
     expiry_date DATE,
+    logo_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
